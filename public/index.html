@@ -112,7 +112,8 @@
     <p>🎯 Each level shows a <b>target</b> — a color or a size.<br>
     ✅ Pop only balloons that <b>match</b> it.<br>
     ❌ Wrong ones break your combo (no heart lost).<br>
-    💀 <b>Traps</b> cost a heart: black, skulls, bombs… and <b>mimics</b> that disguise as the target!<br>
+    😠 <b>Traps</b> cost a heart: black X, grumpy 😠, sneezy 🤧… and <b>tricky</b> 😜 balloons<br>
+    that disguise as the target! Watch for the flicker!<br>
     ⭐ Finish with no mistakes for 3 stars. New worlds, skins & trails unlock as you climb!<br>
     🍀 The <b>lucky color</b> changes daily — pop it for 2x! Fill the 🌈 meter for <b>Fever</b>!</p></div>
   <div class="pill" id="streakPill">🔥 0 day streak</div>
@@ -186,7 +187,7 @@
 
 <!-- GAME OVER -->
 <div id="overOv" class="overlay hidden"><div class="panel">
-  <h2>💥 Out of hearts!</h2>
+  <h2>😢 Out of hearts!</h2>
   <div class="stat" id="overScore"></div>
   <div class="stat">Target was <b id="overTarget"></b></div>
   <div class="row" style="margin-top:14px">
@@ -217,7 +218,7 @@ function beep(f0,f1,dur,type,vol,when){ if(SV.muted||!SV.musicOn&&type==='music'
   }catch(e){} }
 const sPop=()=>{ beep(700,1400,.12,'square',.10); beep(1400,2100,.08,'sine',.06,.02); };
 const sGold=()=>{ [880,1174,1568].forEach((f,i)=>beep(f,f,.12,'triangle',.12,i*.06)); };
-const sBad=()=>{ beep(220,80,.35,'sawtooth',.16); };
+const sBad=()=>{ beep(400,150,.3,'sine',.12); };
 const sOops=()=>{ beep(300,150,.18,'square',.08); };
 const sClick=()=>beep(600,900,.07,'triangle',.10);
 const sCoin=()=>{ beep(1568,1568,.09,'square',.09); beep(2093,2093,.14,'square',.09,.07); };
@@ -264,12 +265,12 @@ const TRAILS=[['sparkle','✨',1],['stars','⭐',10],['hearts','💖',50],['fire
 const TRAILFX={sparkle:'#ffffff',stars:'#FFD700',hearts:'#ff6b9d',fire:'#ff7043',bubbles:'#4fc3f7',rainbow:'rainbow'};
 
 const WORLDS=[
-  {name:'Sunny Meadow',icon:'🌤️',sky:['#1a2a6c','#b21f66','#fdbb2d'],deco:'clouds',sMul:1,spMul:1,grad:['#ff8a65','#f4511c']},
-  {name:'Candy Land',icon:'🍭',sky:['#3d0a54','#ad1457','#ff80ab'],deco:'candy',sMul:1.12,spMul:.92,grad:['#ff80ab','#ad1457']},
-  {name:'Deep Sea',icon:'🌊',sky:['#013a63','#0277bd','#4fc3f7'],deco:'bubbles',sMul:1.25,spMul:.85,grad:['#4fc3f7','#0277bd']},
-  {name:'Space',icon:'🚀',sky:['#000000','#0d1b4c','#3a1c71'],deco:'planets',sMul:1.4,spMul:.78,grad:['#7c4dff','#3a1c71']},
-  {name:'Volcano',icon:'🌋',sky:['#2b0505','#a83226','#ff7b00'],deco:'embers',sMul:1.55,spMul:.7,grad:['#ff7b00','#a83226']}];
-const MAXL=1000, PERW=200, TRAPK=['black','skull','bomb','mimic'];
+  {name:'Sunny Meadow',icon:'🌤️',sky:['#3aa7f7','#aee9ff','#fff9c4'],deco:'clouds',sMul:1,spMul:1,grad:['#ff8a65','#f4511c']},
+  {name:'Candy Land',icon:'🍭',sky:['#ff9ff3','#fbc2eb','#fff5f9'],deco:'candy',sMul:1.12,spMul:.92,grad:['#ff80ab','#ad1457']},
+  {name:'Deep Sea',icon:'🌊',sky:['#00b4d8','#7ed6df','#e0f7fa'],deco:'bubbles',sMul:1.25,spMul:.85,grad:['#4fc3f7','#0277bd']},
+  {name:'Space',icon:'🚀',sky:['#7b6cf0','#b388ff','#ffe3f7'],deco:'planets',sMul:1.4,spMul:.78,grad:['#7c4dff','#3a1c71']},
+  {name:'Volcano',icon:'🌋',sky:['#ff9a3c','#ffb36b','#ffe29d'],deco:'embers',sMul:1.55,spMul:.7,grad:['#ff7b00','#a83226']}];
+const MAXL=1000, PERW=200, TRAPK=['black','grumpy','sneezy','mimic'];
 
 // Procedural level config — difficulty scales across all 1000 levels
 function LCFG(n){
@@ -341,8 +342,8 @@ function spawn(){
   const gB=0.045;
   if(c.rush){ if(roll<0.4){ type='gold'; col='#FFD700'; pts=50; } }
   else if(roll<gB){ type='gold'; col='#FFD700'; pts=50; }
-  else if(roll<gB+sP){ if(w>=1&&Math.random()<0.5){ type='skull'; col='#2b2b3a'; } else { type='black'; col='#222233'; } pts=0; }
-  else if(roll<gB+sP+bP){ type='bomb'; col='#1a1a1a'; pts=0; }
+  else if(roll<gB+sP){ if(w>=1&&Math.random()<0.5){ type='grumpy'; col='#3a3a5c'; } else { type='black'; col='#222233'; } pts=0; }
+  else if(roll<gB+sP+bP){ type='sneezy'; col='#37474f'; pts=0; }
   else if(roll<gB+sP+bP+mP){ type='mimic'; col='#3d0a3d'; pts=0; fake=(c.mode==='color'?c.tCol:col); }
   else if(roll<gB+tp+0.05){ type='frozen'; pts=15; hp=2; }
   else if(roll<gB+tp+0.085){ type='rainbow'; pts=20; }
@@ -372,11 +373,12 @@ function popBalloon(b){
     if(shieldOn){ shieldOn=false; burst(b.x,b.y,'#69f0ae',18,2); float(b.x,b.y,'SHIELDED!','#69f0ae',22); sCoin(); }
     else{
       hearts--; combo=0; mistakes++; sBad();
-      if(b.type==='bomb'){ shake=22; burst(b.x,b.y,'#ff7043',36,2.5); flash(.25);
+      if(b.type==='sneezy'){ shake=16; burst(b.x,b.y,'#aed581',30,2.2); flash(.18);
         for(let j=balloons.length-1;j>=0;j--){ const o=balloons[j];
           if(!isTrap(o.type)&&Math.hypot(o.x-b.x,o.y-b.y)<130){ burst(o.x,o.y,o.col,8,1.5); balloons.splice(j,1); } }
-        float(b.x,b.y,'💥 BOOM! -1 ❤️','#ff7043',26);
-      } else if(b.type==='mimic'){ shake=14; burst(b.x,b.y,'#b5179e',22,2); float(b.x,b.y,'🎭 MIMIC! -1 ❤️','#e040fb',24); }
+        float(b.x,b.y,'🤧 Achoo! -1 ❤️','#aed581',26);
+      } else if(b.type==='mimic'){ shake=14; burst(b.x,b.y,'#b5179e',22,2); float(b.x,b.y,'😜 Tricky! -1 ❤️','#e040fb',24); }
+      else if(b.type==='grumpy'){ shake=14; burst(b.x,b.y,'#5c5c8a',20,2); float(b.x,b.y,'😠 Grumpy! -1 ❤️','#ff8a80',24); }
       else { shake=14; burst(b.x,b.y,'#333',20,2); float(b.x,b.y,'-1 ❤️','#ff5252',24); }
       if(hearts<=0){ updateHUD(); return gameOver(); }
     }
@@ -571,7 +573,7 @@ function drawBalloon(b){
   if(b.col==='rainbow') body=`hsl(${(T*90+b.wob*40)%360},95%,60%)`;
   const disguised=b.type==='mimic'&&!(b.flicker>0);
   if(disguised) body=b.fake==='rainbow'?`hsl(${(T*90)%360},95%,60%)`:b.fake;
-  const dark=['black','skull','bomb'].includes(b.type)||(b.type==='mimic'&&!disguised);
+  const dark=['black','grumpy','sneezy'].includes(b.type)||(b.type==='mimic'&&!disguised);
   if(dark){ ctx.shadowColor='#000'; ctx.shadowBlur=12; }
   else if(b.type==='gold'){ ctx.shadowColor='#FFD700'; ctx.shadowBlur=22; }
   const gr=ctx.createRadialGradient(-r*.3,-r*.35,r*.15,0,0,r*1.15);
@@ -590,18 +592,25 @@ function drawBalloon(b){
     ctx.beginPath(); ctx.moveTo(-r*.5,-r*.3); ctx.lineTo(r*.4,r*.4); ctx.moveTo(r*.5,-r*.2); ctx.lineTo(-r*.3,r*.5); ctx.stroke();
     ctx.font=`900 ${r*.55}px Trebuchet MS`; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('❄️',0,0); }
   else if(b.type==='black'){ ctx.fillStyle='#fff'; ctx.font=`900 ${r*.9}px Trebuchet MS`; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('✕',0,0); }
-  else if(b.type==='skull'){ ctx.font=`${r*.85}px serif`; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('💀',0,0); }
-  else if(b.type==='bomb'){ ctx.font=`${r*.85}px serif`; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('💣',0,0); }
-  else if(b.type==='mimic'&&!disguised){ ctx.font=`${r*.7}px serif`; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('🎭',0,0); }
+  else if(b.type==='grumpy'){ ctx.font=`${r*.85}px serif`; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('😠',0,0); }
+  else if(b.type==='sneezy'){ ctx.font=`${r*.85}px serif`; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('🤧',0,0); }
+  else if(b.type==='mimic'&&!disguised){ ctx.font=`${r*.7}px serif`; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('😜',0,0); }
   else if(b.type==='gold'){ ctx.fillStyle='#7a5c00'; ctx.font=`900 ${r*.6}px Trebuchet MS`; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('+',0,0); }
   else if(b.type==='rainbow'){ ctx.font=`${r*.6}px serif`; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('🌈',0,0); }
   else if(b.type==='clock'){ ctx.font=`${r*.7}px serif`; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('⏳',0,0); }
+  else if(b.type==='n'){ // cute smiley face — kid friendly!
+    ctx.fillStyle='rgba(40,30,60,.6)';
+    ctx.beginPath(); ctx.arc(-r*.2,-r*.08,r*.085,0,7); ctx.arc(r*.2,-r*.08,r*.085,0,7); ctx.fill();
+    ctx.strokeStyle='rgba(40,30,60,.6)'; ctx.lineWidth=Math.max(2,r*.05); ctx.lineCap='round';
+    ctx.beginPath(); ctx.arc(0,r*.1,r*.26,.35,Math.PI-.35); ctx.stroke();
+    ctx.fillStyle='rgba(255,110,150,.45)';
+    ctx.beginPath(); ctx.arc(-r*.36,r*.1,r*.1,0,7); ctx.arc(r*.36,r*.1,r*.1,0,7); ctx.fill(); }
   ctx.restore();
 }
 function draw(){
   ctx.save();
   if(shake>0) ctx.translate((Math.random()-.5)*shake,(Math.random()-.5)*shake);
-  const sky=mode==='game'&&CFG?CFG.W.sky:['#1a2a6c','#b21f66','#fdbb2d'];
+  const sky=mode==='game'&&CFG?CFG.W.sky:['#3aa7f7','#aee9ff','#fff9c4'];
   drawSky(sky);
   drawDeco(mode==='game'&&CFG?CFG.W.deco:'clouds');
   const list=mode==='home'?homeAm:balloons;
