@@ -113,6 +113,30 @@
   #feverbar{position:fixed;top:calc(82px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);width:min(70vw,340px);height:14px;
     background:rgba(0,0,0,.5);border-radius:8px;z-index:15;overflow:hidden;border:2px solid rgba(224,64,251,.5)}
   #feverfill{height:100%;width:0%;background:linear-gradient(90deg,#ff0000,#ff9f00,#ffee00,#33cc66,#00b3ff,#cc66ff);transition:width .2s}
+  /* candy map */
+  #mapScroll{flex:1;min-height:0;width:100%;max-width:480px;overflow-y:auto;overflow-x:hidden;border-radius:24px;position:relative;
+    background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.15);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);margin:8px 0}
+  #mapInner{position:relative;width:100%}
+  #mapSvg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+  #mapNodes{position:absolute;inset:0}
+  .mnode{position:absolute;width:64px;height:64px;margin:-32px 0 0 -32px;border-radius:50%;border:3px solid #fff;
+    font-family:inherit;font-weight:800;font-size:19px;color:#fff;cursor:pointer;
+    background:linear-gradient(180deg,#7ed6ff,#1e88d8);
+    box-shadow:0 6px 16px rgba(0,0,0,.35),inset 0 3px 0 rgba(255,255,255,.4);
+    display:flex;align-items:center;justify-content:center;transition:transform .12s;z-index:2;padding:0}
+  .mnode:active{transform:scale(.9)}
+  .mnode.done{background:linear-gradient(180deg,#8df0b3,#35a06a)}
+  .mnode.lock{background:linear-gradient(180deg,#9aa5b1,#5f6b7a);font-size:22px}
+  .mnode.cur{animation:nodePulse 1.2s infinite;border-color:#ffd54f;z-index:3}
+  .mnode.cur::after{content:'▼ YOU';position:absolute;top:-26px;left:50%;transform:translateX(-50%);font-size:11px;
+    font-weight:800;color:#ffd54f;white-space:nowrap;text-shadow:0 2px 4px #000}
+  @keyframes nodePulse{50%{transform:scale(1.15);box-shadow:0 0 26px rgba(255,213,79,.85)}}
+  .mnode.rush{background:linear-gradient(180deg,#ffe082,#ff9d00);border-color:#fff3c4}
+  .mnode .st{position:absolute;bottom:-17px;left:50%;transform:translateX(-50%);font-size:11px;letter-spacing:1px;
+    color:#ffd54f;text-shadow:0 2px 4px #000;white-space:nowrap}
+  .ep{position:absolute;left:50%;transform:translateX(-50%);z-index:1;white-space:nowrap;
+    background:rgba(20,24,50,.72);border:1px solid rgba(255,255,255,.25);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+    padding:6px 18px;border-radius:20px;font-weight:800;font-size:14px;color:#ffe082;box-shadow:0 4px 12px rgba(0,0,0,.3)}
 </style>
 </head>
 <body>
@@ -154,11 +178,11 @@
   <button class="btn small blue" id="btnChapBack">← Home</button>
 </div>
 
-<!-- LEVEL GRID -->
-<div id="levels" class="scr hidden">
-  <h2 style="font-size:28px" id="lvlTitle">Levels</h2>
-  <div class="grid" id="lvlGrid"></div>
-  <div class="row"><button class="btn small blue" id="btnLvlBack">← Worlds</button></div>
+<!-- LEVEL MAP -->
+<div id="levels" class="scr hidden" style="justify-content:flex-start">
+  <h2 style="font-size:28px;margin-top:calc(56px + env(safe-area-inset-top))" id="lvlTitle">Levels</h2>
+  <div id="mapScroll"><div id="mapInner"><svg id="mapSvg"></svg><div id="mapNodes"></div></div></div>
+  <div class="row" style="padding:10px"><button class="btn small blue" id="btnLvlBack">← Worlds</button></div>
 </div>
 
 <!-- STORE -->
@@ -454,7 +478,7 @@ function levelWin(){
   SV.totalCoinsEarned+=reward;
   const newTrails=checkTrailUnlocks(); save();
   jingleWin(); flash(.35); confettiReal();
-  $('winTitle').textContent=CFG.rush?'💰 Rush Complete!':(perfect?'🌟 PERFECT! Level '+CFG.n+' Complete!':'Level '+CFG.n+' Complete!');
+  $('winTitle').textContent=CFG.rush?'💰 Rush Complete!':(CFG.n%20===0?'🎉 Episode Complete!':(perfect?'🌟 PERFECT! Level '+CFG.n+' Complete!':'Level '+CFG.n+' Complete!'));
   $('winScore').textContent='Score: '+score+' · Best: '+(SV.best[CFG.n]||score)+' · Pops: '+pops;
   $('winCoins').textContent='+'+reward+' 🪙';
   $('winUnlock').textContent=newTrails.length?('🎉 Unlocked trail: '+newTrails.join(', ')+'!'):(CFG.n<MAXL?'Level '+(CFG.n+1)+' unlocked!':'You beat all 1000 levels! 🏆');
@@ -688,22 +712,56 @@ function renderChapters(){
     b.innerHTML=`<div class="ic">${wd.icon}</div><div><div class="nm">${wd.name}</div>
       <div class="pg">Levels ${wi*PERW+1}–${(wi+1)*PERW} · ${done} done</div></div>
       <div class="st">⭐ ${stars}</div>`;
-    b.onclick=()=>{ sClick(); renderLevels(wi); show('levels'); };
+    b.onclick=()=>{ sClick(); show('levels'); renderLevels(wi); };
     el.appendChild(b);
   });
 }
+const EPN=[
+ ['Sunny Start','Daisy Dash','Cloudy Climb','Butterfly Bend','Rainbow Rise','Petal Path','Breezy Bluff','Sunbeam Stretch','Meadow Mile','Golden Gate'],
+ ['Gummy Grove','Lollipop Lane','Choco Chasm','Minty Mountain','Jelly Junction','Caramel Climb','Sour Summit','Taffy Trail','Frosting Falls','Sugar Summit'],
+ ['Coral Cove','Bubble Bay','Turtle Turn','Pearl Pass','Kelp Keep','Wavy Way','Shell Shore','Dolphin Drift','Deep Rise','Treasure Trench'],
+ ['Starry Start','Moon Meadow','Comet Cruise','Planet Path','Nebula Nook','Rocket Run','Alien Alley','Cosmic Climb','Galaxy Gate','Supernova Sprint'],
+ ['Ember Entry','Lava Lane','Magma Mile','Ash Ascent','Cinder Climb','Basalt Bend','Pyro Pass','Obsidian Outlook','Inferno Incline','Summit of Sparks']];
 function renderLevels(wi){
   const wd=WORLDS[wi];
   $('lvlTitle').textContent=wd.icon+' '+wd.name;
-  const g=$('lvlGrid'); g.innerHTML='';
-  for(let n=wi*PERW+1;n<=(wi+1)*PERW;n++){
-    const b=document.createElement('button');
-    const locked=n>SV.maxLevel, st=SV.stars[n]||0;
-    b.className='lvl'+(st?' done':'')+(n===SV.maxLevel?' cur':'')+(locked?' lock':'');
-    b.innerHTML=locked?'🔒':(n+'<span class="s">'+'★'.repeat(st)+'</span>');
-    if(!locked) b.onclick=()=>{ sClick(); startLevel(n); };
-    g.appendChild(b);
+  const inner=$('mapInner'), nodes=$('mapNodes'), svg=$('mapSvg');
+  nodes.innerHTML='';
+  const GAP=94, TOP=70, H=(PERW-1)*GAP+TOP*2;
+  inner.style.height=H+'px';
+  const W=inner.clientWidth||360;
+  const pts=[];
+  for(let i=0;i<PERW;i++){
+    const n=wi*PERW+1+i;
+    pts.push([W*(0.5+0.33*Math.sin(i*0.52)), H-TOP-i*GAP, n, i]);
   }
+  let d=`M ${pts[0][0].toFixed(1)} ${pts[0][1].toFixed(1)}`;
+  for(let k=1;k<pts.length;k++){
+    const my=((pts[k-1][1]+pts[k][1])/2).toFixed(1);
+    d+=` C ${pts[k-1][0].toFixed(1)} ${my}, ${pts[k][0].toFixed(1)} ${my}, ${pts[k][0].toFixed(1)} ${pts[k][1].toFixed(1)}`;
+  }
+  svg.setAttribute('viewBox',`0 0 ${W} ${H}`);
+  svg.innerHTML=`<path d="${d}" fill="none" stroke="rgba(255,255,255,.55)" stroke-width="10" stroke-linecap="round" stroke-dasharray="0.1 24"/>`;
+  pts.forEach(pt=>{
+    const x=pt[0], y=pt[1], n=pt[2], i=pt[3];
+    if(i%20===0){
+      const ep=document.createElement('div'); ep.className='ep';
+      ep.style.top=(y-74)+'px';
+      ep.textContent='🚩 '+(EPN[wi][i/20]||('Episode '+(i/20+1)));
+      nodes.appendChild(ep);
+    }
+    const b=document.createElement('button');
+    const locked=n>SV.maxLevel, st=SV.stars[n]||0, rush=n%25===0;
+    b.className='mnode'+(st?' done':'')+(n===SV.maxLevel?' cur':'')+(locked?' lock':'')+(rush&&!locked?' rush':'');
+    b.style.left=x+'px'; b.style.top=y+'px';
+    b.innerHTML=(locked?'🔒':(rush?'🪙':n))+`<span class="st">${'★'.repeat(st)}</span>`;
+    if(!locked) b.onclick=()=>{ sClick(); startLevel(n); };
+    nodes.appendChild(b);
+  });
+  const target=Math.min(SV.maxLevel,(wi+1)*PERW);
+  const cp=pts.find(p=>p[2]===target);
+  const sc=$('mapScroll');
+  requestAnimationFrame(()=>{ sc.scrollTop=(cp?cp[1]:H)-sc.clientHeight*0.55; });
 }
 function renderStore(){
   updateCoins();
