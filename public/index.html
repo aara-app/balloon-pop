@@ -111,7 +111,17 @@
     ❌ Wrong ones break your combo (no heart lost).<br>
     💀 <b>Traps</b> cost a heart: black, skulls, bombs… and <b>mimics</b> that disguise as the target!<br>
     ⭐ Finish with no mistakes for 3 stars. New worlds, skins & trails unlock as you climb!</p></div>
+  <div class="pill" id="streakPill">🔥 0 day streak</div>
+  <div class="card"><h3>🏆 My Records</h3><p id="recordsP"></p></div>
 </div>
+
+<!-- STREAK -->
+<div id="streakOv" class="overlay hidden"><div class="panel">
+  <h2>🔥 Day <span id="streakDay"></span> Streak!</h2>
+  <div class="stars" id="streakDots" style="font-size:30px;letter-spacing:6px"></div>
+  <div class="stat" id="streakReward" style="color:#ffd54f;font-size:20px"></div>
+  <div class="row" style="margin-top:14px"><button class="btn small gold" id="btnStreakClaim">Claim!</button></div>
+</div></div>
 
 <!-- CHAPTERS -->
 <div id="chapters" class="scr hidden">
@@ -222,8 +232,9 @@ function musicTick(){ if(SV.muted||!SV.musicOn||!AC) return;
 function startMusic(){ if(musicTimer) return; mi=0; musicTimer=setInterval(musicTick,240); }
 
 /* ============ STATE ============ */
-const DEF={coins:200,maxLevel:1,stars:{},skins:['classic'],skin:'classic',pw:{shield:1,slow:1,x2:1,heart:1,freeze:0},
-  trails:['sparkle'],trail:'sparkle',muted:false,musicOn:true,lastDaily:''};
+const DEF={coins:200,maxLevel:1,stars:{},best:{},skins:['classic'],skin:'classic',pw:{shield:1,slow:1,x2:1,heart:1,freeze:0},
+  trails:['sparkle'],trail:'sparkle',muted:false,musicOn:true,lastDaily:'',streak:0,lastPlay:'',
+  totalPops:0,bestCombo:0,totalCoinsEarned:0};
 let SV;
 try{ SV=Object.assign({},DEF,JSON.parse(localStorage.getItem('bp3')||'{}')); SV.pw=Object.assign({},DEF.pw,SV.pw); }
 catch(e){ SV=JSON.parse(JSON.stringify(DEF)); }
@@ -366,6 +377,7 @@ function popBalloon(b){
     if(b.type==='frozen'&&b.hp>1){ b.hp--; sCrack(); burst(b.x,b.y,'#b3e5fc',8,1.5); float(b.x,b.y,'❄️','#b3e5fc',20); return; }
     balloons.splice(i,1);
     combo++; pops++; progress++;
+    SV.totalPops++; if(combo>SV.bestCombo) SV.bestCombo=combo;
     const gained=b.pts*cm*mult; score+=gained;
     if(b.type==='gold'){ sGold(); addCoins(CFG.rush?5:3); float(b.x,b.y,'+🪙','#FFD700',20); }
     else if(b.type==='rainbow'){ progress++; sGold(); float(b.x,b.y,'🌈 +2!','#e040fb',22); }
@@ -401,10 +413,12 @@ function levelWin(){
   if(CFG.n>=SV.maxLevel&&SV.maxLevel<MAXL) SV.maxLevel=CFG.n+1;
   const reward=15+stars*10+(((CFG.n/50)|0)*5);
   addCoins(reward);
+  if(score>(SV.best[CFG.n]||0)) SV.best[CFG.n]=score;
+  SV.totalCoinsEarned+=reward;
   const newTrails=checkTrailUnlocks(); save();
   jingleWin(); flash(.35); confettiReal();
   $('winTitle').textContent=CFG.rush?'💰 Rush Complete!':(perfect?'🌟 PERFECT! Level '+CFG.n+' Complete!':'Level '+CFG.n+' Complete!');
-  $('winScore').textContent='Score: '+score+' · Pops: '+pops;
+  $('winScore').textContent='Score: '+score+' · Best: '+(SV.best[CFG.n]||score)+' · Pops: '+pops;
   $('winCoins').textContent='+'+reward+' 🪙';
   $('winUnlock').textContent=newTrails.length?('🎉 Unlocked trail: '+newTrails.join(', ')+'!'):(CFG.n<MAXL?'Level '+(CFG.n+1)+' unlocked!':'You beat all 1000 levels! 🏆');
   const ss=$('winStars').children;
@@ -414,7 +428,7 @@ function levelWin(){
   updateHUD();
 }
 function gameOver(){
-  running=false; sBad();
+  running=false; sBad(); save();
   $('overScore').textContent='Score: '+score+' · Progress: '+progress+'/'+CFG.need;
   $('overTarget').textContent=CFG.mode==='color'?'the target color':(CFG.mode==='size'?(CFG.targetBig?'BIG':'SMALL'):'—');
   setTimeout(()=>{ $('overOv').classList.remove('hidden'); },700);
@@ -674,6 +688,31 @@ function checkDaily(){
   const today=new Date().toISOString().slice(0,10);
   $('btnDaily').style.opacity=SV.lastDaily===today?.45:1;
 }
+/* ============ STREAKS & RECORDS ============ */
+const STREAK_RW=[0,75,100,150,200,300,400,500];
+function streakReward(s){ return STREAK_RW[Math.min(s,7)]; }
+function checkStreak(){
+  const today=new Date().toISOString().slice(0,10);
+  const yest=new Date(Date.now()-864e5).toISOString().slice(0,10);
+  if(SV.lastPlay===today) return 0;
+  SV.streak=(SV.lastPlay===yest)?SV.streak+1:1;
+  SV.lastPlay=today; save();
+  return SV.streak;
+}
+function showStreak(s){
+  $('streakDay').textContent=s;
+  const pos=((s-1)%7)+1, dots=$('streakDots'); dots.innerHTML='';
+  for(let i=1;i<=7;i++){ const sp=document.createElement('span');
+    sp.textContent=i<=pos?'🔥':'⚪'; if(i<=pos) sp.className='earned'; dots.appendChild(sp); }
+  $('streakReward').textContent='+'+streakReward(s)+' 🪙';
+  $('streakOv').classList.remove('hidden');
+}
+function updateStreakPill(){ $('streakPill').textContent='🔥 '+SV.streak+' day streak'; }
+function renderRecords(){
+  let stars=0; for(const k in SV.stars) stars+=SV.stars[k];
+  $('recordsP').innerHTML='⭐ '+stars+' stars &nbsp;·&nbsp; 🏅 Best combo '+SV.bestCombo+
+    '<br>🎈 '+SV.totalPops+' pops &nbsp;·&nbsp; 🪙 '+SV.totalCoinsEarned+' earned';
+}
 function claimDaily(){
   const today=new Date().toISOString().slice(0,10);
   if(SV.lastDaily===today){ sOops(); return; }
@@ -695,12 +734,15 @@ $('btnWinLevels').onclick=()=>{ sClick(); quitToLevels(); };
 $('btnOverLevels').onclick=()=>{ sClick(); quitToLevels(); };
 $('btnMute').onclick=()=>{ SV.muted=!SV.muted; save(); $('btnMute').textContent=SV.muted?'🔇':'🔊'; };
 $('btnMusic').onclick=()=>{ SV.musicOn=!SV.musicOn; save(); $('btnMusic').style.opacity=SV.musicOn?1:.4; if(SV.musicOn) startMusic(); };
+$('btnStreakClaim').onclick=()=>{ addCoins(streakReward(SV.streak)); sCoin(); $('streakOv').classList.add('hidden'); renderRecords(); };
 document.addEventListener('visibilitychange',()=>{ if(document.hidden) save(); });
 
 /* ============ INIT ============ */
 $('btnMute').textContent=SV.muted?'🔇':'🔊';
 $('btnMusic').style.opacity=SV.musicOn?1:.4;
-updateCoins(); checkDaily(); show('home'); mode='home';
+updateCoins(); checkDaily(); updateStreakPill(); renderRecords(); show('home'); mode='home';
+const _ns=checkStreak();
+if(_ns>0){ updateStreakPill(); setTimeout(()=>showStreak(_ns),700); }
 requestAnimationFrame(loop);
 </script>
 </body>
