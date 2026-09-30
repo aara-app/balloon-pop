@@ -91,6 +91,9 @@
   #flash{position:fixed;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:35}
   #timer{position:fixed;top:calc(64px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);z-index:15;
     font-size:26px;font-weight:900;background:rgba(0,0,0,.55);padding:6px 20px;border-radius:20px;border:2px solid #4fc3f7}
+  #feverbar{position:fixed;top:calc(82px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);width:min(70vw,340px);height:14px;
+    background:rgba(0,0,0,.5);border-radius:8px;z-index:15;overflow:hidden;border:2px solid rgba(224,64,251,.5)}
+  #feverfill{height:100%;width:0%;background:linear-gradient(90deg,#ff0000,#ff9f00,#ffee00,#33cc66,#00b3ff,#cc66ff);transition:width .2s}
 </style>
 </head>
 <body>
@@ -110,7 +113,8 @@
     ✅ Pop only balloons that <b>match</b> it.<br>
     ❌ Wrong ones break your combo (no heart lost).<br>
     💀 <b>Traps</b> cost a heart: black, skulls, bombs… and <b>mimics</b> that disguise as the target!<br>
-    ⭐ Finish with no mistakes for 3 stars. New worlds, skins & trails unlock as you climb!</p></div>
+    ⭐ Finish with no mistakes for 3 stars. New worlds, skins & trails unlock as you climb!<br>
+    🍀 The <b>lucky color</b> changes daily — pop it for 2x! Fill the 🌈 meter for <b>Fever</b>!</p></div>
   <div class="pill" id="streakPill">🔥 0 day streak</div>
   <div class="card"><h3>🏆 My Records</h3><p id="recordsP"></p></div>
 </div>
@@ -152,9 +156,11 @@
 <div id="hud" class="hidden">
   <div class="pill" id="hHearts">❤️❤️❤️</div>
   <div class="pill" id="targetChip">🎯</div>
+  <div class="pill" id="luckyChip">🍀</div>
   <div class="pill" id="hScore">0</div>
 </div>
 <div id="pbar" class="hidden"><div id="pfill"></div></div>
+<div id="feverbar" class="hidden"><div id="feverfill"></div></div>
 <div id="timer" class="hidden">30</div>
 <div id="powers" class="hidden"></div>
 <div id="banner"><div class="b1" id="ban1"></div><div class="b2" id="ban2"></div></div>
@@ -291,7 +297,7 @@ function isMatch(b){ if(isTrap(b.type)) return false;
 const $=id=>document.getElementById(id);
 function show(id){ ['home','chapters','levels','store'].forEach(s=>$(s).classList.toggle('hidden',s!==id));
   $('hud').classList.add('hidden'); $('pbar').classList.add('hidden'); $('powers').classList.add('hidden'); $('timer').classList.add('hidden');
-  q.classList.add('hidden'); }
+  $('feverbar').classList.add('hidden'); q.classList.add('hidden'); }
 function updateCoins(){ $('coinBar').textContent='🪙 '+SV.coins; }
 function banner(t1,t2){ $('ban1').textContent=t1; $('ban2').textContent=t2;
   const b=$('banner'); b.classList.remove('show'); void b.offsetWidth; b.classList.add('show'); }
@@ -313,6 +319,7 @@ let mode='home', running=false, CFG=null;
 let balloons=[], parts=[], floatsArr=[], trailPts=[], homeAm=[];
 let score=0, combo=0, hearts=3, progress=0, mistakes=0, pops=0;
 let slowT=0, mult2T=0, freezeT=0, shieldOn=false, elapsed=0, spawnT=0, rushT=0, shake=0, T=0;
+let fever=0, feverT=0, lastCol=null, csN=0, luckyCol='#ff5252';
 const q=document.createElement('button'); q.className='iconbtn hidden'; q.id='btnQuitHud'; q.textContent='✕';
 q.style.left='120px'; q.onclick=()=>{ sClick(); quitToLevels(); }; document.body.appendChild(q);
 
@@ -378,13 +385,22 @@ function popBalloon(b){
     balloons.splice(i,1);
     combo++; pops++; progress++;
     SV.totalPops++; if(combo>SV.bestCombo) SV.bestCombo=combo;
-    const gained=b.pts*cm*mult; score+=gained;
+    // --- color addiction systems ---
+    const ecol=b.col==='rainbow'?(lastCol||b.col):b.col;
+    if(ecol===lastCol) csN++; else { lastCol=ecol; csN=1; }
+    let gained=b.pts*cm*mult;
+    if(feverT>0) gained*=2;
+    if(ecol===luckyCol){ gained*=2; float(b.x,b.y-26,'🍀 Lucky x2!','#7bff9e',20); }
+    if(csN===3||csN===5||csN===8||csN===12||csN===20){ gained+=csN*5; sCoin(); float(b.x,b.y-46,'🔥 Color streak x'+csN+'!','#ff9f00',22); }
+    score+=gained;
+    if(feverT<=0){ fever=Math.min(100,fever+(b.type==='gold'?12:7));
+      if(fever>=100){ fever=0; feverT=10; banner('🌈 RAINBOW FEVER!','2x points for 10s!'); sGold(); } }
     if(b.type==='gold'){ sGold(); addCoins(CFG.rush?5:3); float(b.x,b.y,'+🪙','#FFD700',20); }
     else if(b.type==='rainbow'){ progress++; sGold(); float(b.x,b.y,'🌈 +2!','#e040fb',22); }
     else if(b.type==='clock'){ slowT=5; sCoin(); float(b.x,b.y,'⏳ SLOW!','#4dd0e1',22); }
     else sPop();
     if(CFG.rush) addCoins(2);
-    burst(b.x,b.y,b.col,14,2); ring(b.x,b.y,b.col);
+    burst(b.x,b.y,feverT>0?'rainbow':b.col,14,2); ring(b.x,b.y,b.col);
     const tfx=TRAILFX[SV.trail]||'#fff';
     if(tfx==='rainbow') burst(b.x,b.y,'rainbow',6,1.4);
     else burst(b.x,b.y,tfx,6,1.4);
@@ -441,10 +457,13 @@ function startLevel(n){
   balloons=[]; parts=[]; floatsArr=[];
   score=0; combo=0; hearts=3; progress=0; mistakes=0; pops=0;
   slowT=0; mult2T=0; freezeT=0; shieldOn=false; elapsed=0; spawnT=0; rushT=CFG.time;
+  fever=0; feverT=0; lastCol=null; csN=0;
   mode='game'; running=true;
   ['winOv','overOv'].forEach(id=>$(id).classList.add('hidden'));
   show('game');
   $('hud').classList.remove('hidden'); $('powers').classList.remove('hidden'); q.classList.remove('hidden');
+  $('feverbar').classList.remove('hidden');
+  $('luckyChip').innerHTML='🍀 <span class="tdot" style="background:'+luckyCol+'"></span> 2x';
   if(CFG.rush){ $('timer').classList.remove('hidden'); $('pbar').classList.add('hidden'); }
   else { $('timer').classList.add('hidden'); $('pbar').classList.remove('hidden'); }
   renderTarget(); updatePowers(); updateHUD(); updateCoins();
@@ -456,6 +475,7 @@ function updateHUD(){
   $('hScore').textContent=score;
   const tp=$('tProg'); if(tp) tp.textContent=CFG.rush?'':(' '+Math.min(progress,CFG.need)+'/'+CFG.need);
   $('pfill').style.width=CFG.rush?0:(Math.min(100,progress/CFG.need*100)+'%');
+  $('feverfill').style.width=(feverT>0?100:fever)+'%';
   if(CFG.rush) $('timer').textContent=Math.ceil(rushT)+'s';
 }
 function updatePowers(){
@@ -491,6 +511,7 @@ function update(dt){
   for(let i=trailPts.length-1;i>=0;i--){ trailPts[i].life-=dt; if(trailPts[i].life<=0) trailPts.splice(i,1); }
   if(shake>0) shake=Math.max(0,shake-dt*40);
   if(slowT>0) slowT-=dt; if(mult2T>0) mult2T-=dt; if(freezeT>0) freezeT-=dt;
+  if(feverT>0){ feverT-=dt; if(feverT<=0){ feverT=0; toast('Fever over!'); } }
 
   if(mode==='home'){
     if(homeAm.length<12&&Math.random()<0.03){ const pal=PALETTES[SV.skin]||PALETTES.classic;
@@ -741,6 +762,7 @@ document.addEventListener('visibilitychange',()=>{ if(document.hidden) save(); }
 $('btnMute').textContent=SV.muted?'🔇':'🔊';
 $('btnMusic').style.opacity=SV.musicOn?1:.4;
 updateCoins(); checkDaily(); updateStreakPill(); renderRecords(); show('home'); mode='home';
+luckyCol=(PALETTES[SV.skin]||PALETTES.classic)[new Date().getDate()%6];
 const _ns=checkStreak();
 if(_ns>0){ updateStreakPill(); setTimeout(()=>showStreak(_ns),700); }
 requestAnimationFrame(loop);
