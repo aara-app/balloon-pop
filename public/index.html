@@ -265,11 +265,11 @@ const TRAILS=[['sparkle','✨',1],['stars','⭐',10],['hearts','💖',50],['fire
 const TRAILFX={sparkle:'#ffffff',stars:'#FFD700',hearts:'#ff6b9d',fire:'#ff7043',bubbles:'#4fc3f7',rainbow:'rainbow'};
 
 const WORLDS=[
-  {name:'Sunny Meadow',icon:'🌤️',sky:['#1a2a6c','#b21f66','#fdbb2d'],deco:'clouds',sMul:1,spMul:1,grad:['#ff8a65','#f4511c']},
-  {name:'Candy Land',icon:'🍭',sky:['#3d0a54','#ad1457','#ff80ab'],deco:'candy',sMul:1.12,spMul:.92,grad:['#ff80ab','#ad1457']},
-  {name:'Deep Sea',icon:'🌊',sky:['#013a63','#0277bd','#4fc3f7'],deco:'bubbles',sMul:1.25,spMul:.85,grad:['#4fc3f7','#0277bd']},
-  {name:'Space',icon:'🚀',sky:['#000000','#0d1b4c','#3a1c71'],deco:'planets',sMul:1.4,spMul:.78,grad:['#7c4dff','#3a1c71']},
-  {name:'Volcano',icon:'🌋',sky:['#2b0505','#a83226','#ff7b00'],deco:'embers',sMul:1.55,spMul:.7,grad:['#ff7b00','#a83226']}];
+  {name:'Sunny Meadow',icon:'🌤️',sky:['#3aa7f7','#aee9ff','#fff9c4'],deco:'clouds',sMul:1,spMul:1,grad:['#ff8a65','#f4511c']},
+  {name:'Candy Land',icon:'🍭',sky:['#ff9ff3','#fbc2eb','#fff5f9'],deco:'candy',sMul:1.12,spMul:.92,grad:['#ff80ab','#ad1457']},
+  {name:'Deep Sea',icon:'🌊',sky:['#00b4d8','#7ed6df','#e0f7fa'],deco:'bubbles',sMul:1.25,spMul:.85,grad:['#4fc3f7','#0277bd']},
+  {name:'Space',icon:'🚀',sky:['#7b6cf0','#b388ff','#ffe3f7'],deco:'planets',sMul:1.4,spMul:.78,grad:['#7c4dff','#3a1c71']},
+  {name:'Volcano',icon:'🌋',sky:['#ff9a3c','#ffb36b','#ffe29d'],deco:'embers',sMul:1.55,spMul:.7,grad:['#ff7b00','#a83226']}];
 const MAXL=1000, PERW=200, TRAPK=['black','grumpy','sneezy','mimic'];
 
 // Procedural level config — difficulty scales across all 1000 levels
@@ -610,7 +610,7 @@ function drawBalloon(b){
 function draw(){
   ctx.save();
   if(shake>0) ctx.translate((Math.random()-.5)*shake,(Math.random()-.5)*shake);
-  const sky=mode==='game'&&CFG?CFG.W.sky:['#1a2a6c','#b21f66','#fdbb2d'];
+  const sky=mode==='game'&&CFG?CFG.W.sky:['#3aa7f7','#aee9ff','#fff9c4'];
   drawSky(sky);
   drawDeco(mode==='game'&&CFG?CFG.W.deco:'clouds');
   const list=mode==='home'?homeAm:balloons;
